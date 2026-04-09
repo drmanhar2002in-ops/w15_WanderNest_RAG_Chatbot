@@ -33,22 +33,22 @@ class TravelSearchEngine:
         # HINT: Initialize Azure Chat OpenAI LLM
         # Required params: api_key, azure_endpoint, api_version, deployment_name, temperature
         self.llm = AzureChatOpenAI(
-            api_key=Config.OPENAI_API_KEY,
+            api_key=Config.AZURE_OPENAI_API_KEY,
             azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
             api_version=Config.AZURE_OPENAI_API_VERSION,
-            deployment_name=Config.AZURE_OPENAI_DEPLOYMENT,
+            deployment_name=Config.AZURE_OPENAI_DEPLOYMENT_NAME,
             temperature=Config.LLM_TEMPERATURE
         )
         
         # HINT: Initialize Azure OpenAI Embeddings
-        # Required params: api_key, azure_endpoint, azure_deployment, api_version
+        # Required params: api_key, azure_endpoint, model, api_version
         self.embeddings = AzureOpenAIEmbeddings(
-            api_key=Config.OPENAI_API_KEY,  
-            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,  
-            azure_deployment=Config.AZURE_OPENAI_DEPLOYMENT,  
-            api_version=Config.AZURE_OPENAI_API_VERSION,  
-        )
-        
+            api_key=Config.AZURE_OPENAI_API_KEY,
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            model=Config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+            api_version=Config.AZURE_OPENAI_API_VERSION,
+        ) 
+
         # HINT: Initialize Vector Store using get_vector_store function
         self.vector_store = get_vector_store(self.embeddings) 
     
@@ -74,7 +74,7 @@ class TravelSearchEngine:
             # HINT: Validate input using governance gate
             gov_check = self.governance_gate.validate_input(query_text)
             
-            if not gov_check['is_valid']:  
+            if not gov_check['passed']:  
                 # HINT: Log governance failure event
                 mlflow.log_event("GovernanceCheckFailed", {"violations": gov_check['violations']}) 
                 return [], "Query blocked by security checks."

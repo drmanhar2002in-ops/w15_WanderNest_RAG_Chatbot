@@ -34,8 +34,8 @@ class ComplianceChecker:
         pii_result = self.pii_detector.detect_pii(text)
         
         detected_pii = []
-        if pii_result['pii']:
-            for entity in pii_result['pii']:
+        if pii_result['has_pii']:
+            for entity in pii_result['entities']:
                 detected_pii.append(f"{entity['type']}: {entity['value']}")
         
         if detected_pii:
@@ -52,5 +52,5 @@ class ComplianceChecker:
             'compliant': is_compliant,
             'violations': violations,
             'remediation': remediation,
-            'detected_pii_count': pii_result['pii_count']
+            'detected_pii_count': pii_result['count']
         }

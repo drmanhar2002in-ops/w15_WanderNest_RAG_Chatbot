@@ -28,7 +28,7 @@ class TravelDataLoader:
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,  # HINT: 1000
             chunk_overlap=200,  # HINT: 200
-            separators=RecursiveCharacterTextSplitter.get_default_separators()
+            separators=["\n\n", "\n", " ", ""]
         )
 
     def load_pdfs_from_data_directory(self) -> List[Document]:

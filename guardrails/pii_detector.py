@@ -26,7 +26,7 @@ class PIIDetector:
             'ip_address': r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'  # HINT: Pattern for IPv4 address (four groups of 1-3 digits)
         }
     
-    def detect(self, text: str) -> Dict:
+    def detect_pii(self, text: str) -> Dict:
         """
         Detect PII in text
         

@@ -26,6 +26,7 @@ class Config:
     AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2023-05-15")  # HINT: "AZURE_OPENAI_API_VERSION", "2023-05-15"
     AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")  # HINT: "AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4"
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-ada-002")  # HINT: "AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-ada-002"
+    LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "1.0"))  # HINT: "LLM_TEMPERATURE", "0.7"
 
     # ====================
     # Azure AI Search Configuration (Only vector store - no ChromaDB)

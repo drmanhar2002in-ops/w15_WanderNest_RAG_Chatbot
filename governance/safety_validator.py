@@ -41,7 +41,7 @@ class SafetyValidator:
             except Exception as e:
                 print(f"Warning: Failed to init Azure Content Safety: {e}")
 
-    def validate(self, text: str, severity_threshold: str = "high") -> Dict[str, Any]:
+    def validate_safety(self, text: str, severity_threshold: str = "high") -> Dict[str, Any]:
         """
         Validates the text for safety violations
         
@@ -56,7 +56,7 @@ class SafetyValidator:
         is_safe = True
         
         # HINT: 1. Local Content Safety Guardrail (Keywords & Regex)
-        local_result = self.content_safety.validate(text)
+        local_result = self.content_safety.check(text)
         if not local_result['is_safe']:
             is_safe = False
             for flag in local_result['flags']:  # HINT: 'flags'
@@ -76,7 +76,7 @@ class SafetyValidator:
                 
                 # HINT: Check categories_analysis for high severity flags (severity > 2)
                 if response.categories_analysis:  
-                    for analysis in response.categories_analysis:
+                    for analysis in response.categories_analysis: # HINT: Log category and severity
                         if analysis.severity > 2: 
                             is_safe = False 
                             flags.append(f"Azure Content Safety Violation: {analysis.category} ({analysis.severity})")  # HINT: category, severity
