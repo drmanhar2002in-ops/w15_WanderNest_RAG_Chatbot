@@ -1,4 +1,4 @@
-# ✈️ Wanderlust Travels RAG Chatbot
+# ✈️ WanderNest Travels RAG Chatbot
 
 AI-powered travel assistant using Azure OpenAI, Azure AI Search, and LLMOps best practices.
 
