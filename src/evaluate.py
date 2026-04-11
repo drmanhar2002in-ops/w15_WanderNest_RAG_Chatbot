@@ -19,6 +19,7 @@ from typing import List, Dict
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 from datasets import Dataset
+from langchain_openai import AzureChatOpenAI
 
 from src.search_engine import TravelSearchEngine
 from src.config import Config
@@ -35,6 +36,18 @@ class TravelChatbotEvaluator:
         # HINT: Initialize search engine and golden dataset path
         self.engine = TravelSearchEngine() 
         self.golden_dataset_path = Path("data") / "golden_dataset.json"  # HINT: "data", "golden_dataset.json"
+        
+        # HINT: Initialize Azure OpenAI LLM for Ragas evaluation
+        self.llm = AzureChatOpenAI(
+            api_key=Config.AZURE_OPENAI_API_KEY,
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            api_version=Config.AZURE_OPENAI_API_VERSION,
+            deployment_name=Config.AZURE_OPENAI_DEPLOYMENT_NAME,
+            temperature=0.0
+        )
+        
+        # HINT: Set OPENAI_API_KEY for Ragas compatibility
+        os.environ["OPENAI_API_KEY"] = Config.AZURE_OPENAI_API_KEY
     
     def load_golden_dataset(self) -> List[Dict]:
         """
@@ -45,7 +58,7 @@ class TravelChatbotEvaluator:
         if not self.golden_dataset_path.exists(): 
             logger.warning(f"Golden dataset not found at {self.golden_dataset_path}")
             logger.info("Creating sample golden dataset...")
-            return self.___()  
+            return self._create_sample_dataset()  
         
         with open(self.golden_dataset_path, 'r') as f: 
             return json.load(f)  
@@ -61,22 +74,6 @@ class TravelChatbotEvaluator:
             {
                 "question": "What are the baggage allowance rules for international flights?",  # HINT: "What are the baggage allowance rules for international flights?"
                 "ground_truth": "The baggage allowance for international flights varies by cabin class and destination. Please check with Air India for specific details."  # HINT: Appropriate ground truth answer
-            },
-            {
-                "question": "What is Air India's cancellation policy?",  # HINT: "What is Air India's cancellation policy?"
-                "ground_truth": "Air India's cancellation policy depends on the fare type and booking class. Please refer to the terms and conditions of your ticket for detailed information."  # HINT: Appropriate ground truth answer
-            },
-            {
-                "question": "Do I need a visa to travel from India to UK?",  # HINT: "Do I need a visa to travel from India to UK?"
-                "ground_truth": "Yes, Indian citizens need a valid visa to travel to the UK."  # HINT: Appropriate ground truth answer
-            },
-            {
-                "question": "What are the refund policies for flight cancellations?",  # HINT: "What are the refund policies for flight cancellations?"
-                "ground_truth": "Refund policies for flight cancellations depend on the fare type and booking class. Please refer to the terms and conditions of your ticket for detailed information."  # HINT: Appropriate ground truth answer
-            },
-            {
-                "question": "What documents do I need for international travel?",  # HINT: "What documents do I need for international travel?"
-                "ground_truth": "For international travel, you typically need a valid passport, visa (if required), and sometimes additional documents like travel insurance or health certificates."  # HINT: Appropriate ground truth answer
             }
         ]
         
@@ -106,10 +103,9 @@ class TravelChatbotEvaluator:
             
             try:
                 # HINT: Search for relevant documents
-                docs, _ = self.engine.__call__(question, k=5) 
-                
+                docs, _ = self.engine.search_by_text(question, k=5) 
                 # HINT: Generate answer
-                answer = self.engine.__call__(docs, question)
+                answer = self.engine.synthesize_response(docs, question)
                 
                 # HINT: Collect contexts (retrieved documents)
                 context_texts = [doc.__dict__.get('page_content', '') for doc in docs]
@@ -150,7 +146,7 @@ class TravelChatbotEvaluator:
         
         # HINT: Extract questions and ground truths
         questions = [item["question"] for item in golden_data] 
-        ground_truths = [[item["ground_truth"]] for item in golden_data] 
+        ground_truths = [item["ground_truth"] for item in golden_data] 
         
         # HINT: Generate answers and contexts
         logger.info("\nGenerating responses...")
@@ -180,16 +176,17 @@ class TravelChatbotEvaluator:
                     context_precision,  # HINT: context_precision
                     context_recall   # HINT: context_recall
                 ],
+                llm=self.llm
             )
             
             logger.info("\n" + "=" * 70)
             logger.info("EVALUATION RESULTS")
             logger.info("=" * 70)
             logger.info(f"\nRagas Scores:")
-            logger.info(f"  Faithfulness:       {results['faithfulness']:.4f}")  
-            logger.info(f"  Answer Relevancy:   {results['answer_relevancy']:.4f}")   
-            logger.info(f"  Context Precision:  {results['context_precision']:.4f}") 
-            logger.info(f"  Context Recall:     {results['context_recall']:.4f}")  
+            logger.info(f"  Faithfulness:       {results.get('faithfulness', 0):.4f}")  
+            logger.info(f"  Answer Relevancy:   {results.get('answer_relevancy', 0):.4f}")   
+            logger.info(f"  Context Precision:  {results.get('context_precision', 0):.4f}") 
+            logger.info(f"  Context Recall:     {results.get('context_recall', 0):.4f}")  
             logger.info("=" * 70)
             
             # HINT: Save detailed results

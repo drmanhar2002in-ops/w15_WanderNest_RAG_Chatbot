@@ -134,15 +134,14 @@ class TravelSearchEngine:
             """  # HINT: context, user_query
             
             # HINT: Generate response using LLM
-            response = self.llm.invoke(prompt).strip()  
-            
+            response = self.llm.invoke(prompt)
             # HINT: Validate output using governance gate
-            gov_check = self.governance_gate.validate_output(response) 
-            
-            if not gov_check['is_valid']:  
+            answer_text = response.content.strip()
+            gov_check = self.governance_gate.validate_output(answer_text)
+            if not gov_check['passed']:  
                 return "I generated a response but it didn't pass safety checks. Please rephrase your question."  # HINT: "I generated a response but it didn't pass safety checks. Please rephrase your question."
             
             # HINT: Log response to MLflow as text file
-            mlflow.log_text(response, "final_response.txt")
+            mlflow.log_text(answer_text, "final_response.txt")
             
-            return response
+            return answer_text
