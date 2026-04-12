@@ -19,8 +19,7 @@ from typing import List, Dict
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 from datasets import Dataset
-from langchain_openai import AzureChatOpenAI
-#from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from src.config import Config
 
 
@@ -30,10 +29,6 @@ from src.config import Config
 # HINT: Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("evaluation")
-
-
-# Initialize evaluator
-os.environ["OPENAI_API_KEY"] = Config.AZURE_OPENAI_API_KEY
 
 
 class TravelChatbotEvaluator:
@@ -51,6 +46,14 @@ class TravelChatbotEvaluator:
             deployment_name="gpt-4.1",
             temperature=0.0
         )
+        
+        self.embeddings = AzureOpenAIEmbeddings(
+            api_key=Config.AZURE_OPENAI_API_KEY,
+            api_version=Config.AZURE_OPENAI_API_VERSION,
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            azure_deployment=Config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+        )
+            
     
     def load_golden_dataset(self) -> List[Dict]:
         """
@@ -169,7 +172,7 @@ class TravelChatbotEvaluator:
         # HINT: Extract questions and ground truths
         questions = [item["question"] for item in golden_data] 
         ground_truths = [item["ground_truth"] for item in golden_data]
-        categories = [item["category"] for item in golden_data] 
+
         
         # HINT: Generate answers and contexts
         logger.info("\nGenerating responses...")
@@ -179,8 +182,7 @@ class TravelChatbotEvaluator:
         dataset_dict = {
             "question": questions,  
             "answer": answers,   
-            "contexts": contexts,  
-            "category": categories,
+            "contexts": contexts,
             "ground_truth": ground_truths  
         }
         
@@ -200,7 +202,8 @@ class TravelChatbotEvaluator:
                     context_precision,  # HINT: context_precision
                     context_recall,   # HINT: context_recall
                 ],
-                llm=self.llm
+                llm=self.llm,
+                embeddings=self.embeddings
             )
             
             logger.info("\n" + "=" * 70)
