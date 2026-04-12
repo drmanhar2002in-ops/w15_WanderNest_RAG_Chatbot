@@ -28,7 +28,7 @@ class TravelDataLoader:
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,  # HINT: 1000
             chunk_overlap=200,  # HINT: 200
-            separators=RecursiveCharacterTextSplitter.get_default_separators()
+            separators=["\n\n", "\n", " ", ""]
         )
 
     def load_pdfs_from_data_directory(self) -> List[Document]:
@@ -63,7 +63,8 @@ class TravelDataLoader:
                 for doc in docs:
                     doc.metadata.update({
                         'source': pdf_file.name,
-                        'file_type': "pdf"  
+                        'file_type': "pdf",
+                        'category': self._categorize_document(pdf_file.name)  # HINT: categorize based on filename
                     })
 
                 documents.extend(docs)

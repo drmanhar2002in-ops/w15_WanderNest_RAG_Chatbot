@@ -19,6 +19,10 @@ from typing import List, Dict
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 from datasets import Dataset
+from langchain_openai import AzureChatOpenAI
+#from langchain_openai import ChatOpenAI
+from src.config import Config
+
 
 from src.search_engine import TravelSearchEngine
 from src.config import Config
@@ -28,6 +32,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("evaluation")
 
 
+# Initialize evaluator
+os.environ["OPENAI_API_KEY"] = Config.AZURE_OPENAI_API_KEY
+
+
 class TravelChatbotEvaluator:
     """Evaluates Travel Chatbot using Ragas metrics"""
     
@@ -35,6 +43,14 @@ class TravelChatbotEvaluator:
         # HINT: Initialize search engine and golden dataset path
         self.engine = TravelSearchEngine() 
         self.golden_dataset_path = Path("data") / "golden_dataset.json"  # HINT: "data", "golden_dataset.json"
+
+        self.llm = AzureChatOpenAI(
+            api_key=Config.AZURE_OPENAI_API_KEY,
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            api_version=Config.AZURE_OPENAI_API_VERSION,
+            deployment_name="gpt-4.1",
+            temperature=0.0
+        )
     
     def load_golden_dataset(self) -> List[Dict]:
         """
@@ -45,8 +61,8 @@ class TravelChatbotEvaluator:
         if not self.golden_dataset_path.exists(): 
             logger.warning(f"Golden dataset not found at {self.golden_dataset_path}")
             logger.info("Creating sample golden dataset...")
-            return self.___()  
-        
+            return self._create_sample_dataset()  
+    
         with open(self.golden_dataset_path, 'r') as f: 
             return json.load(f)  
     
@@ -106,20 +122,22 @@ class TravelChatbotEvaluator:
             
             try:
                 # HINT: Search for relevant documents
-                docs, _ = self.engine.__call__(question, k=5) 
+                docs, _ = self.engine.search_by_text(question, k=3) 
                 
                 # HINT: Generate answer
-                answer = self.engine.__call__(docs, question)
+                answer = self.engine.synthesize_response(docs, question)
                 
                 # HINT: Collect contexts (retrieved documents)
+                #context_texts = [doc.page_content for doc in docs]
                 context_texts = [doc.__dict__.get('page_content', '') for doc in docs]
                 
+                
                 answers.append(answer)
-                contexts.append(context_texts)
+                contexts.append(context_texts) 
                 
             except Exception as e:
                 logger.error(f"Error generating answer for '{question}': {e}")
-                answers.append("Error generating answer") 
+                answers.append("Error generating answer.") 
                 contexts.append([])
         
         return answers, contexts
@@ -150,7 +168,8 @@ class TravelChatbotEvaluator:
         
         # HINT: Extract questions and ground truths
         questions = [item["question"] for item in golden_data] 
-        ground_truths = [[item["ground_truth"]] for item in golden_data] 
+        ground_truths = [item["ground_truth"] for item in golden_data]
+        categories = [item["category"] for item in golden_data] 
         
         # HINT: Generate answers and contexts
         logger.info("\nGenerating responses...")
@@ -161,6 +180,7 @@ class TravelChatbotEvaluator:
             "question": questions,  
             "answer": answers,   
             "contexts": contexts,  
+            "category": categories,
             "ground_truth": ground_truths  
         }
         
@@ -178,18 +198,23 @@ class TravelChatbotEvaluator:
                     faithfulness,  # HINT: faithfulness
                     answer_relevancy,  # HINT: answer_relevancy
                     context_precision,  # HINT: context_precision
-                    context_recall   # HINT: context_recall
+                    context_recall,   # HINT: context_recall
                 ],
+                llm=self.llm
             )
             
             logger.info("\n" + "=" * 70)
             logger.info("EVALUATION RESULTS")
             logger.info("=" * 70)
             logger.info(f"\nRagas Scores:")
-            logger.info(f"  Faithfulness:       {results['faithfulness']:.4f}")  
-            logger.info(f"  Answer Relevancy:   {results['answer_relevancy']:.4f}")   
-            logger.info(f"  Context Precision:  {results['context_precision']:.4f}") 
-            logger.info(f"  Context Recall:     {results['context_recall']:.4f}")  
+            faithfulness_val = self._normalize_metric(results['faithfulness'])
+            answer_relevancy_val = self._normalize_metric(results['answer_relevancy'])
+            context_precision_val = self._normalize_metric(results['context_precision'])
+            context_recall_val = self._normalize_metric(results['context_recall'])
+            logger.info(f"  Faithfulness:       {faithfulness_val:.4f}")  
+            logger.info(f"  Answer Relevancy:   {answer_relevancy_val:.4f}")   
+            logger.info(f"  Context Precision:  {context_precision_val:.4f}") 
+            logger.info(f"  Context Recall:     {context_recall_val:.4f}")  
             logger.info("=" * 70)
             
             # HINT: Save detailed results
@@ -201,7 +226,17 @@ class TravelChatbotEvaluator:
             logger.error(f"Ragas evaluation failed: {e}")
             logger.error("Make sure you have OPENAI_API_KEY set for Ragas to work")
             return None
-    
+
+    def _normalize_metric(self, value):
+        try:
+            if isinstance(value, list):
+                return float(pd.Series(value).mean()) if value else 0.0
+            if pd.isna(value):
+                return 0.0
+            return float(value)
+        except Exception:
+            return 0.0
+
     def _save_results(self, results: dict, dataset_dict: dict):
         """
         Save evaluation results to file
@@ -213,10 +248,10 @@ class TravelChatbotEvaluator:
         
         # HINT: Save summary
         summary = {
-            "faithfulness": float(results.get('faithfulness', 0)),  # HINT: 'faithfulness'
-            "answer_relevancy": float(results.get('answer_relevancy', 0)),  # HINT: 'answer_relevancy'
-            "context_precision": float(results.get('context_precision', 0)),  # HINT: 'context_precision'
-            "context_recall": float(results.get('context_recall', 0)),  # HINT: 'context_recall'
+            "faithfulness": self._normalize_metric(results['faithfulness']),  # HINT: 'faithfulness'
+            "answer_relevancy": self._normalize_metric(results['answer_relevancy']),  # HINT: 'answer_relevancy'
+            "context_precision": self._normalize_metric(results['context_precision']),  # HINT: 'context_precision'
+            "context_recall": self._normalize_metric(results['context_recall']),  # HINT: 'context_recall'
             "total_test_cases": len(dataset_dict["question"])
         }
         
@@ -240,23 +275,26 @@ class TravelChatbotEvaluator:
         return loop.run_until_complete(self.run_ragas_evaluation())
 
 
-def run_evaluation():   
+def run_evaluation():
     """
     Main evaluation function
     
     HINT: Run evaluator and check if results pass thresholds
     """
-    evaluator = TravelChatbotEvaluator()
-    results = evaluator.run()
+    evaluator = TravelChatbotEvaluator()  
+    results = evaluator.run() 
     
     if results:
         # HINT: Check if evaluation passes minimum thresholds
         min_faithfulness = 0.7  
         min_relevancy = 0.7 
         
+        faithfulness_val = evaluator._normalize_metric(results['faithfulness'])
+        answer_relevancy_val = evaluator._normalize_metric(results['answer_relevancy'])
+        
         passed = (
-            results.get('faithfulness', 0) >= min_faithfulness and  
-            results.get('answer_relevancy', 0) >= min_relevancy 
+            faithfulness_val >= min_faithfulness and  
+            answer_relevancy_val >= min_relevancy
         )
         
         if passed:

@@ -36,9 +36,8 @@ class GovernanceGate:
         compliance_result = self.compliance_checker.check_compliance(text, compliance_standards=["GDPR"])
         
         # HINT: Combine results - passed only if both checks pass
-        passed = safety_result['passed'] and compliance_result['compliant'] 
-        violations = safety_result['violations'] + compliance_result['violations'] 
-        
+        passed = safety_result['is_safe'] and compliance_result['compliant']  
+        violations = safety_result['is_safe'] and compliance_result['violations']
         result = {
             'passed': passed, 
             'violations': violations, 
@@ -59,8 +58,8 @@ class GovernanceGate:
         safety_result = self.safety_validator.validate_safety(text) 
         compliance_result = self.compliance_checker.check_compliance(text, compliance_standards=["GDPR"]) 
         
-        passed = safety_result['passed'] and compliance_result['compliant']  
-        violations = safety_result['violations'] + compliance_result['violations']  
+        passed = safety_result['is_safe'] and compliance_result['compliant']  
+        violations = safety_result['is_safe'] and compliance_result['violations']
         
         result = {
             'passed': passed,  

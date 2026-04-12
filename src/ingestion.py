@@ -35,7 +35,11 @@ def ingest_travel_documents():
     print("=" * 70)
 
     # HINT: Initialize components
-    loader = TravelDataLoader()  
+    try:
+        loader = TravelDataLoader()  
+    except Exception as e:
+        print(f"❌ Failed to initialize data loader: {e}")
+        return
 
     try:
         engine = TravelSearchEngine() 
@@ -114,13 +118,16 @@ def ingest_travel_documents():
         if mlflow_active:
             mlflow.log_metric("ingested_count", ingested_count)
             mlflow.log_metric("failed_count", failed_count)
+            mlflow.end_run() 
+
 
         # ====================
         # Verification
         # ====================
         print("\n🔍 Verifying index...")
         test_query = "What are the refund policies?"  
-        results, _ = engine.search(test_query, k=5) 
+        results, query_text = engine.search_by_text(test_query, k=5) 
+        print(f"results: {results}")
 
         if results:
             print("✅ Index verification successful!")

@@ -1,0 +1,7 @@
+venv/*
+*.pyc
+*.yaml
+*.experimentKind
+.env
+reports/*
+.coverage
