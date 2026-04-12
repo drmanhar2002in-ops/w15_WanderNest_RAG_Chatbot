@@ -278,14 +278,14 @@ The system implements multi-layer safety:
 ### Build and Run Locally
 ```bash
 # Build image
-docker build -t wanderlust-chatbot .
+docker build -t wandernest-chatbot .
 
 # Run container
 docker run -p 8501:8501 \
   -e AZURE_OPENAI_API_KEY="your-key" \
   -e AZURE_SEARCH_ENDPOINT="your-endpoint" \
   -e AZURE_SEARCH_KEY="your-key" \
-  wanderlust-chatbot
+  wandernest-chatbot
 ```
 
 ### Deploy to Cloud

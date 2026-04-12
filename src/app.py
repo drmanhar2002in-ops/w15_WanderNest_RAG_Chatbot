@@ -19,10 +19,10 @@ import src.monitoring  # Enable MLflow/Azure Monitor
 import time
 
 # HINT: Set page config with title and layout
-st.set_page_config(page_title="___", layout="___")  # HINT: "WanderNest Travels - AI Assistant", "wide"
+st.set_page_config(page_title="WanderNest Travels - AI Assistant", layout="wide")
 
-st.title("___")  
-st.markdown("___")  # HINT: "Get instant answers about flights, hotels, policies, and travel requirements."
+st.title("WanderNest Travels - AI Assistant")  
+st.markdown("Get instant answers about flights, hotels, policies, and travel requirements.")
 
 # ====================
 # Initialize Engine

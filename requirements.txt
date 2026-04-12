@@ -11,6 +11,8 @@ openai
 streamlit
 python-dotenv
 pytest
+pytest-cov
+pytest-asyncio
 pypdf
 ragas
 scikit-learn
@@ -21,8 +23,6 @@ pandas
 mlflow<=3.5.0
 azureml-mlflow
 azure-ai-contentsafety
-pytest
-pytest-asyncio
 kaggle
 chromadb
 python-json-logger

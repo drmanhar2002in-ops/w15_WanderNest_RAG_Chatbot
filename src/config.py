@@ -28,6 +28,9 @@ class Config:
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-ada-002")  # HINT: "AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-ada-002"
     LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "1.0"))  # HINT: "LLM_TEMPERATURE", "0.7"
 
+
+    VECTOR_STORE_TYPE = os.getenv("VECTOR_STORE_TYPE", "azure_search")  # HINT: "VECTOR_STORE_TYPE", "azure_search"
+
     # ====================
     # Azure AI Search Configuration (Only vector store - no ChromaDB)
     # ====================

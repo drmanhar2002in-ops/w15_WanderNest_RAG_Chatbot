@@ -3,3 +3,5 @@ venv/*
 *.yaml
 *.experimentKind
 .env
+reports/*
+.coverage

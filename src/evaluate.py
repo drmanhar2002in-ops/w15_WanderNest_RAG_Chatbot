@@ -20,6 +20,9 @@ from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 from datasets import Dataset
 from langchain_openai import AzureChatOpenAI
+#from langchain_openai import ChatOpenAI
+from src.config import Config
+
 
 from src.search_engine import TravelSearchEngine
 from src.config import Config
@@ -27,6 +30,10 @@ from src.config import Config
 # HINT: Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("evaluation")
+
+
+# Initialize evaluator
+os.environ["OPENAI_API_KEY"] = Config.AZURE_OPENAI_API_KEY
 
 
 class TravelChatbotEvaluator:
@@ -37,15 +44,11 @@ class TravelChatbotEvaluator:
         self.engine = TravelSearchEngine() 
         self.golden_dataset_path = Path("data") / "golden_dataset.json"  # HINT: "data", "golden_dataset.json"
 
-        # HINT: Ensure Ragas/OpenAI compatibility by exporting OPENAI_API_KEY
-        if Config.OPENAI_API_KEY:
-            os.environ["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
-
         self.llm = AzureChatOpenAI(
             api_key=Config.AZURE_OPENAI_API_KEY,
             azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
             api_version=Config.AZURE_OPENAI_API_VERSION,
-            deployment_name=Config.AZURE_OPENAI_DEPLOYMENT_NAME,
+            deployment_name="gpt-4.1",
             temperature=0.0
         )
     
@@ -165,7 +168,8 @@ class TravelChatbotEvaluator:
         
         # HINT: Extract questions and ground truths
         questions = [item["question"] for item in golden_data] 
-        ground_truths = [item["ground_truth"] for item in golden_data] 
+        ground_truths = [item["ground_truth"] for item in golden_data]
+        categories = [item["category"] for item in golden_data] 
         
         # HINT: Generate answers and contexts
         logger.info("\nGenerating responses...")
@@ -176,6 +180,7 @@ class TravelChatbotEvaluator:
             "question": questions,  
             "answer": answers,   
             "contexts": contexts,  
+            "category": categories,
             "ground_truth": ground_truths  
         }
         
@@ -193,9 +198,9 @@ class TravelChatbotEvaluator:
                     faithfulness,  # HINT: faithfulness
                     answer_relevancy,  # HINT: answer_relevancy
                     context_precision,  # HINT: context_precision
-                    context_recall   # HINT: context_recall
+                    context_recall,   # HINT: context_recall
                 ],
-                llm=self.llm,
+                llm=self.llm
             )
             
             logger.info("\n" + "=" * 70)

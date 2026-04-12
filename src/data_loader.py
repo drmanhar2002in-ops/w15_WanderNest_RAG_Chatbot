@@ -63,7 +63,8 @@ class TravelDataLoader:
                 for doc in docs:
                     doc.metadata.update({
                         'source': pdf_file.name,
-                        'file_type': "pdf"  
+                        'file_type': "pdf",
+                        'category': self._categorize_document(pdf_file.name)  # HINT: categorize based on filename
                     })
 
                 documents.extend(docs)
